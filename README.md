@@ -2,3 +2,11 @@
 WORK IN PROGRESS
 
 Generates an ARC ready CWL workflow and run from a nf-core pipeline's nextflow_schema.json.
+
+Basic commands:
+```
+
+tsc main.ts --resolveJsonModule
+node main.js
+```
+
