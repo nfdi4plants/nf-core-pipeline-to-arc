@@ -1,0 +1,4 @@
+# Run the test pipeline with Docker, 
+# all requirements will be pulled from nf-co.re
+profile: conda,test
+outdir: myresults
