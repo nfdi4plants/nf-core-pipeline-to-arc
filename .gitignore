@@ -5,3 +5,5 @@ node_modules/
 *.js
 *.config
 rnaseq_conv.cwl
+load_schema.*
+test_schema.*
