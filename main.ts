@@ -1,5 +1,5 @@
 import * as cwlTsAuto from 'cwl-ts-auto'
-import { prefixUrl } from 'cwl-ts-auto/dist/util/Saveable';
+//import { prefixUrl } from 'cwl-ts-auto/dist/util/Saveable';
 import * as fs from 'fs'
 
 //import * as path from 'path'
@@ -7,9 +7,13 @@ import * as fs from 'fs'
 
 import * as schema from './nextflow_schema.json';
 
-//const nfjsonpath = "./nf_pipeline_docs/nextflow_schema.json"
-
 export const paramsList = ['type', 'format', 'default']
+
+const path = "https://raw.githubusercontent.com/"
+//ToDo: collect these parameters as console input
+const pipeline = "nf-core/rnaseq"
+const tag = "master"
+const version = 3.6
 
 export interface nfInputType {
     name: string    //id and prefix
@@ -23,31 +27,12 @@ type CWLInputType =
   | cwlTsAuto.CommandInputEnumSchema 
   | cwlTsAuto.CommandInputArraySchema 
 
-type InputSchema =
-  |string
-  | cwlTsAuto.CommandInputArraySchema
-  | cwlTsAuto.CommandInputRecordSchema
-  | cwlTsAuto.CommandInputEnumSchema
-
-  type CWLOutputType =
-  | string 
-  | cwlTsAuto.CommandOutputRecordSchema 
-  | cwlTsAuto.CommandOutputEnumSchema 
-  | cwlTsAuto.CommandOutputArraySchema
-
-type OutputSchema =
-  | string
-  | cwlTsAuto.CommandOutputArraySchema
-  | cwlTsAuto.CommandOutputRecordSchema
-  | cwlTsAuto.CommandOutputEnumSchema
-
 function createBinding (prefix: string): cwlTsAuto.CommandLineBinding {
     return new cwlTsAuto.CommandLineBinding({
             prefix: prefix
     })
 }
 
-//export const inputTypes = ['data_input', 'data_collection_input', 'text', 'boolean', 'float', 'integer', 'color']
 export const formatTypes = ['file-path', 'directory-path', 'path']
 function mapNfTypeToType (nfType: string): string {
     // ToDo: check if nfType is in schema
@@ -81,15 +66,6 @@ export function createMinimalInput (name: string, type: CWLInputType | CWLInputT
     return newInput
 }
 
-/*export function createMinimalOutput (name: string, type: CWLOutputType | CWLOutputType[]): cwlTsAuto.CommandOutputParameter {
-    //return new cwlTsAuto.CommandOutputParameter({
-    var newOutput = new cwlTsAuto.CommandOutputParameter({
-        id: name,
-        type: type,
-        //outputBinding: binding
-    })
-    return newOutput
-}*/
 
 let nfCommandLineTool =
 new cwlTsAuto.CommandLineTool({
@@ -101,12 +77,8 @@ new cwlTsAuto.CommandLineTool({
     inputs: [],
     outputs: []
 })
-const pipeline = "nf-core/rnaseq"
+
 nfCommandLineTool.baseCommand = ['nextflow', 'run', pipeline]
-
-
-  //fs.writeFileSync("test.txt", nfCommandLineTool.inputs.push(nfInput))
-//console.log(JSON.stringify(nfCommandLineTool.save()))
 
 export function getParams (schema: any, cmdltool: any) {
   //let i = 3;
@@ -133,7 +105,16 @@ export function getParams (schema: any, cmdltool: any) {
           // get input parameter's default, if defined
           if(property[prop].default) {
               console.log("\t" + property[prop].default);
-              var defaultval = property[prop].default
+              var defaultval = property[prop].default;
+              //check if defaultval contains a relative path like ${projectDir} or ${baseDir}
+              if (defaultval.toString().includes("${projectDir}")) {
+                let re = /\${projectDir}/gi;
+                defaultval = defaultval.toString().replace(re, path + pipeline +'/' + tag);
+            } else if (defaultval.toString().includes("${baseDir}")){
+                let re = /\${baseDir}/gi;
+                defaultval = defaultval.toString().replace(re, path + pipeline +'/' + tag);   
+            }
+
           }
           let nfInput = createMinimalInput(name, type, prefix, defaultval)
           cmdltool.inputs.push(nfInput)
@@ -146,7 +127,7 @@ export function getParams (schema: any, cmdltool: any) {
 }
 getParams(schema, nfCommandLineTool)
 
-let nfInput_r = createMinimalInput("release", "float?", "-r", 3.6)
+let nfInput_r = createMinimalInput("release", "float?", "-r", version)
 nfCommandLineTool.inputs.push(nfInput_r)
 let nfInput_profile = createMinimalInput("profile", "string?", "-profile", "singularity")
 nfCommandLineTool.inputs.push(nfInput_profile)
@@ -175,6 +156,35 @@ console.log(testbind.prefix+'?', testbind.position)*/
 
 //console.log(`input properties: ${schema.definitions.input_output_options.properties.input.type}`);
 //console.log(`input properties: ${schema.definitions.input_output_options.properties.input.help_text}`);
+
+/*type InputSchema =
+  |string
+  | cwlTsAuto.CommandInputArraySchema
+  | cwlTsAuto.CommandInputRecordSchema
+  | cwlTsAuto.CommandInputEnumSchema
+
+  type CWLOutputType =
+  | string 
+  | cwlTsAuto.CommandOutputRecordSchema 
+  | cwlTsAuto.CommandOutputEnumSchema 
+  | cwlTsAuto.CommandOutputArraySchema
+
+type OutputSchema =
+  | string
+  | cwlTsAuto.CommandOutputArraySchema
+  | cwlTsAuto.CommandOutputRecordSchema
+  | cwlTsAuto.CommandOutputEnumSchema
+*/
+
+/*export function createMinimalOutput (name: string, type: CWLOutputType | CWLOutputType[]): cwlTsAuto.CommandOutputParameter {
+    //return new cwlTsAuto.CommandOutputParameter({
+    var newOutput = new cwlTsAuto.CommandOutputParameter({
+        id: name,
+        type: type,
+        //outputBinding: binding
+    })
+    return newOutput
+}*/
 
 /*export function extractGaInputsFromGaFile (gaFile: any): GAInputType[] {
     const gaInputs: GAInputType[] = []
