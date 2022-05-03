@@ -1,21 +1,33 @@
 import * as cwlTsAuto from 'cwl-ts-auto'
 import * as fs from 'fs'
+import * as http from 'https'
 
-//import { prefixUrl } from 'cwl-ts-auto/dist/util/Saveable';
-//import * as path from 'path'
-//import * as yaml from 'js-yaml'
+// get pipeline information from user by console input
+const prompt = require("prompt-sync")({ sigint: true });
+const pipeline = prompt("Enter the pipelines name (e.g. nf-core/rnaseq): ");
+const tag = prompt("Enter the pipeline branch tag (e.g. master): ");
+const version = prompt("Enter the pipeline version used (e.g. 3.5): ");
+const outname = prompt("Enter the name of your output .cwl (e.g. rnaseq: ");
 
-//export const paramsList = ['type', 'format', 'default']
+const gitpath = "https://raw.githubusercontent.com/"
+// create path to nextflow_schema.json
+const schemapath = gitpath+pipeline+'/'+tag+'/nextflow_schema.json';
 
-const path = "https://raw.githubusercontent.com/"
-//ToDo: collect these parameters as console input
-const pipeline = "nf-core/rnaseq"
-const tag = "master"
-const version = 3.6
+function loadSchema(path: string){
+  //download nextflow_schema.json from pipeline's github repo
+const file = fs.createWriteStream("nextflow_schema.json");
+const request = http.get(path, function(response:any) {
+  response.pipe(file);
+  // after download completed close filestream
+  file.on("finish", () => {
+      file.close();
+       //console.log("Download Completed");
+  });
+});
+return file
+}
 
-//const schemapath = path+pipeline+'/'+tag+'/nextflow_schema.json'
 import * as schema from './nextflow_schema.json';
-
 export interface nfInputType {
     name: string    //id and prefix
     type: string    //type, may depend on format, if defined
@@ -34,7 +46,7 @@ function createBinding (prefix: string): cwlTsAuto.CommandLineBinding {
     })
 }
 
-export const formatTypes = ['file-path', 'directory-path', 'path']
+export const formatTypes = ['file-path', 'directory-path', 'path', 'number', 'string', 'boolean']
 function mapNfTypeToType (nfType: string): string {
     // ToDo: check if nfType is in schema
     switch (nfType) {
@@ -48,6 +60,19 @@ function mapNfTypeToType (nfType: string): string {
           //ToDo: if input has ending .gz return File, otherwise return Directory
         return 'File'
       }
+      case 'number': {
+        //ToDo: could be int or float
+      return 'int'
+      }
+      case 'integer': {
+        return 'int'
+        }
+      case 'string': {
+      return 'string'
+      }
+      case 'boolean': {
+        return 'boolean'
+        }
       default: {
         throw Error('Input type not supported: ' + nfType)
       }
@@ -89,10 +114,10 @@ export function getParams (schema: any, cmdltool: any) {
           var name = prop;
           var prefix = "--"+prop
           // get input parameter's type
-          var type = property[prop].type + "?";
-          if (type=='integer?'){
+          var type = mapNfTypeToType(property[prop].type) + "?";
+          /*if (type=='integer?'){
             type='int?'
-          }
+          }*/
           // get input parameter's format, if defined
           if(property[prop].format) {
               var format = property[prop].format;
@@ -103,10 +128,10 @@ export function getParams (schema: any, cmdltool: any) {
               //check if defaultval contains a relative path like ${projectDir} or ${baseDir}
               if (defaultval.toString().includes("${projectDir}")) {
                 let re = /\${projectDir}/gi;
-                defaultval = defaultval.toString().replace(re, path + pipeline +'/' + tag);
+                defaultval = defaultval.toString().replace(re, gitpath + pipeline +'/' + tag);
             } else if (defaultval.toString().includes("${baseDir}")){
                 let re = /\${baseDir}/gi;
-                defaultval = defaultval.toString().replace(re, path + pipeline +'/' + tag);   
+                defaultval = defaultval.toString().replace(re, gitpath + pipeline +'/' + tag);   
             }
 
           }
@@ -135,11 +160,7 @@ let nfOutput_out = new cwlTsAuto.CommandOutputParameter({
 })
 nfCommandLineTool.outputs.push(nfOutput_out)
 
-//console.log("Output from nfCommandLineTool:")
-//console.log(JSON.stringify(nfCommandLineTool.save()))
-
-//ToDo include output name as user-option
-fs.writeFileSync(`./rnaseq.cwl`, JSON.stringify(nfCommandLineTool.save()))
+fs.writeFileSync(`./`+outname +`.cwl`, JSON.stringify(nfCommandLineTool.save()))
 
 
 /* ************************************* */
