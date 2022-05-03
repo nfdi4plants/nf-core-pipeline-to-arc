@@ -1,19 +1,20 @@
 import * as cwlTsAuto from 'cwl-ts-auto'
-//import { prefixUrl } from 'cwl-ts-auto/dist/util/Saveable';
 import * as fs from 'fs'
 
+//import { prefixUrl } from 'cwl-ts-auto/dist/util/Saveable';
 //import * as path from 'path'
 //import * as yaml from 'js-yaml'
 
-import * as schema from './nextflow_schema.json';
-
-export const paramsList = ['type', 'format', 'default']
+//export const paramsList = ['type', 'format', 'default']
 
 const path = "https://raw.githubusercontent.com/"
 //ToDo: collect these parameters as console input
 const pipeline = "nf-core/rnaseq"
 const tag = "master"
 const version = 3.6
+
+//const schemapath = path+pipeline+'/'+tag+'/nextflow_schema.json'
+import * as schema from './nextflow_schema.json';
 
 export interface nfInputType {
     name: string    //id and prefix
@@ -60,12 +61,10 @@ export function createMinimalInput (name: string, type: CWLInputType | CWLInputT
         id: name,
         type: type,
         inputBinding: binding,
-        //default_: inputDefault
     })
     newInput.default_ = inputDefault
     return newInput
 }
-
 
 let nfCommandLineTool =
 new cwlTsAuto.CommandLineTool({
@@ -83,28 +82,23 @@ nfCommandLineTool.baseCommand = ['nextflow', 'run', pipeline]
 export function getParams (schema: any, cmdltool: any) {
   //let i = 3;
   for (var item in schema.definitions) {
-      console.log("INPUT PARAMETERS FOR: " + item);
       var category = schema.definitions[item];
       for (var prop in category.properties) {
           var property = category.properties;
           // get input parameter's name and --prefix
-          console.log(prop);
           var name = prop;
           var prefix = "--"+prop
           // get input parameter's type
-          console.log("\t" + property[prop].type);
           var type = property[prop].type + "?";
           if (type=='integer?'){
             type='int?'
           }
           // get input parameter's format, if defined
           if(property[prop].format) {
-              console.log("\t" + property[prop].format);
               var format = property[prop].format;
           }
           // get input parameter's default, if defined
           if(property[prop].default) {
-              console.log("\t" + property[prop].default);
               var defaultval = property[prop].default;
               //check if defaultval contains a relative path like ${projectDir} or ${baseDir}
               if (defaultval.toString().includes("${projectDir}")) {
@@ -141,13 +135,11 @@ let nfOutput_out = new cwlTsAuto.CommandOutputParameter({
 })
 nfCommandLineTool.outputs.push(nfOutput_out)
 
-console.log("Output from nfCommandLineTool:")
-console.log(JSON.stringify(nfCommandLineTool.save()))
+//console.log("Output from nfCommandLineTool:")
+//console.log(JSON.stringify(nfCommandLineTool.save()))
 
+//ToDo include output name as user-option
 fs.writeFileSync(`./rnaseq.cwl`, JSON.stringify(nfCommandLineTool.save()))
-
-/*let testbind = createBinding(1,"testprefix")
-console.log(testbind.prefix+'?', testbind.position)*/
 
 
 /* ************************************* */
@@ -268,4 +260,7 @@ for (const line of config.split(/[\r\n]+/)){
     }   
   }
    */
+
+  /*let testbind = createBinding(1,"testprefix")
+console.log(testbind.prefix+'?', testbind.position)*/
 
