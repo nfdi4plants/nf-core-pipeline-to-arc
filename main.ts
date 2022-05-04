@@ -2,32 +2,37 @@ import * as cwlTsAuto from 'cwl-ts-auto'
 import * as fs from 'fs'
 import * as http from 'https'
 
-// get pipeline information from user by console input
+/* ************************************* */
+// GET PIPELINE INFO FROM USER BY CONSOLE INPUT //
+/* ************************************* */
 const prompt = require("prompt-sync")({ sigint: true });
 const pipeline = prompt("Enter the pipelines name (e.g. nf-core/rnaseq): ");
 const tag = prompt("Enter the pipeline branch tag (e.g. master): ");
 const version = prompt("Enter the pipeline version used (e.g. 3.5): ");
-const outname = prompt("Enter the name of your output .cwl (e.g. rnaseq: ");
+const outname = prompt("Enter the name of your output .cwl (e.g. rnaseq): ");
 
+/* ************************************* */
+// DOWNLOAD THE NEXTFLOW_SCHEMA.JSON FROM PIPELINE'S GITHUB REPO //
+/* ************************************* */
+// path to github content
 const gitpath = "https://raw.githubusercontent.com/"
 // create path to nextflow_schema.json
 const schemapath = gitpath+pipeline+'/'+tag+'/nextflow_schema.json';
 
-function loadSchema(path: string){
-  //download nextflow_schema.json from pipeline's github repo
 const file = fs.createWriteStream("nextflow_schema.json");
-const request = http.get(path, function(response:any) {
+http.get(schemapath, function(response:any) {
   response.pipe(file);
   // after download completed close filestream
   file.on("finish", () => {
       file.close();
-       //console.log("Download Completed");
+       console.log("The nextflow_schema.json has been updated to the requested pipeline");
   });
 });
-return file
-}
-
 import * as schema from './nextflow_schema.json';
+
+/* ************************************* */
+/////////////// DEFINITIONS //////////////
+/* ************************************* */
 export interface nfInputType {
     name: string    //id and prefix
     type: string    //type, may depend on format, if defined
@@ -40,13 +45,28 @@ type CWLInputType =
   | cwlTsAuto.CommandInputEnumSchema 
   | cwlTsAuto.CommandInputArraySchema 
 
+export const formatTypes = ['file-path', 'directory-path', 'path', 'number', 'string', 'boolean']
+/* ************************************* */
+/////////////// FUNCTIONS ////////////////
+/* ************************************* */
 function createBinding (prefix: string): cwlTsAuto.CommandLineBinding {
     return new cwlTsAuto.CommandLineBinding({
             prefix: prefix
     })
 }
 
-export const formatTypes = ['file-path', 'directory-path', 'path', 'number', 'string', 'boolean']
+export function createInput (name: string, type: CWLInputType | CWLInputType[], prefix: string, inputDefault: any): cwlTsAuto.CommandInputParameter {
+  let binding = createBinding(prefix)
+  //return new cwlTsAuto.CommandInputParameter({
+  var newInput = new cwlTsAuto.CommandInputParameter({
+      id: name,
+      type: type,
+      inputBinding: binding,
+  })
+  newInput.default_ = inputDefault
+  return newInput
+}
+
 function mapNfTypeToType (nfType: string): string {
     // ToDo: check if nfType is in schema
     switch (nfType) {
@@ -57,11 +77,11 @@ function mapNfTypeToType (nfType: string): string {
         return 'Directory'
       }
       case 'path': {
-          //ToDo: if input has ending .gz return File, otherwise return Directory
+        //ToDo: if input has ending .gz return File, otherwise return Directory
         return 'File'
       }
       case 'number': {
-        //ToDo: could be int or float
+        //ToDo: Check if it can be int or float?
       return 'int'
       }
       case 'integer': {
@@ -79,31 +99,6 @@ function mapNfTypeToType (nfType: string): string {
     }
   }
 
-export function createMinimalInput (name: string, type: CWLInputType | CWLInputType[], prefix: string, inputDefault: any): cwlTsAuto.CommandInputParameter {
-    let binding = createBinding(prefix)
-    //return new cwlTsAuto.CommandInputParameter({
-    var newInput = new cwlTsAuto.CommandInputParameter({
-        id: name,
-        type: type,
-        inputBinding: binding,
-    })
-    newInput.default_ = inputDefault
-    return newInput
-}
-
-let nfCommandLineTool =
-new cwlTsAuto.CommandLineTool({
-    cwlVersion: cwlTsAuto.CWLVersion.V1_2,
-    class_: cwlTsAuto.CommandLineTool_class.COMMANDLINETOOL,
-    requirements: [],
-    hints: [],
-    baseCommand: [],
-    inputs: [],
-    outputs: []
-})
-
-nfCommandLineTool.baseCommand = ['nextflow', 'run', pipeline]
-
 export function getParams (schema: any, cmdltool: any) {
   //let i = 3;
   for (var item in schema.definitions) {
@@ -115,9 +110,6 @@ export function getParams (schema: any, cmdltool: any) {
           var prefix = "--"+prop
           // get input parameter's type
           var type = mapNfTypeToType(property[prop].type) + "?";
-          /*if (type=='integer?'){
-            type='int?'
-          }*/
           // get input parameter's format, if defined
           if(property[prop].format) {
               var format = property[prop].format;
@@ -133,9 +125,10 @@ export function getParams (schema: any, cmdltool: any) {
                 let re = /\${baseDir}/gi;
                 defaultval = defaultval.toString().replace(re, gitpath + pipeline +'/' + tag);   
             }
-
           }
-          let nfInput = createMinimalInput(name, type, prefix, defaultval)
+          // create Input object
+          let nfInput = createInput(name, type, prefix, defaultval)
+          // add Input to the commandline tool
           cmdltool.inputs.push(nfInput)
           //reset format and defaultval for next loop
           format=null
@@ -144,14 +137,31 @@ export function getParams (schema: any, cmdltool: any) {
       }
   }
 }
+
+/* ************************************* */
+/////// CREATE COMMANDLINETOOL ////////
+/* ************************************* */
+// Initialize a commandlinetool
+let nfCommandLineTool =
+new cwlTsAuto.CommandLineTool({
+    cwlVersion: cwlTsAuto.CWLVersion.V1_2,
+    class_: cwlTsAuto.CommandLineTool_class.COMMANDLINETOOL,
+    requirements: [],
+    hints: [],
+    baseCommand: [],
+    inputs: [],
+    outputs: []
+})
+// Add baseCommand
+nfCommandLineTool.baseCommand = ['nextflow', 'run', pipeline]
+// Add optional Inputs
 getParams(schema, nfCommandLineTool)
-
-let nfInput_r = createMinimalInput("release", "float?", "-r", version)
+// Add mandatory Inputs (all nf-pipelines)
+let nfInput_r = createInput("release", "float?", "-r", version)
 nfCommandLineTool.inputs.push(nfInput_r)
-let nfInput_profile = createMinimalInput("profile", "string?", "-profile", "singularity")
+let nfInput_profile = createInput("profile", "string?", "-profile", "singularity")
 nfCommandLineTool.inputs.push(nfInput_profile)
-
-//let nfOutput_out = createMinimalOutput("out_folder", "Directory")
+// Add Output
 let nfOutput_out = new cwlTsAuto.CommandOutputParameter({
   type: cwlTsAuto.CWLType.DIRECTORY,
   id: 'out_folder',
@@ -160,8 +170,11 @@ let nfOutput_out = new cwlTsAuto.CommandOutputParameter({
 })
 nfCommandLineTool.outputs.push(nfOutput_out)
 
+/* ************************************* */
+////////// CREATE THE .CWL FILE //////////
+/* ************************************* */
 fs.writeFileSync(`./`+outname +`.cwl`, JSON.stringify(nfCommandLineTool.save()))
-
+console.log("The "+outname +".cwl file has been created successfully")
 
 /* ************************************* */
 /* CODE SNIPPETS */
@@ -243,7 +256,7 @@ export function getParameter (schema: any, cmdltool: any) {
                 console.log("\t" + property[prop].default);
                 var defaultval = property[prop].default
             }
-            let nfInput = createMinimalInput(name, type, 1, prefix, defaultval)
+            let nfInput = createInput(name, type, 1, prefix, defaultval)
             cmdltool.inputs.push(nfInput)      
         }
     }
