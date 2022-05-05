@@ -1,0 +1,8 @@
+##########################################################
+# Run the test version of the required nf-core pipeline #
+#########################################################
+# Command: cwltool pipeline.cwl minTest.yml
+# Run the test pipeline with Docker, 
+# all requirements will be pulled from nf-co.re
+profile: docker,test
+outdir: test_results
