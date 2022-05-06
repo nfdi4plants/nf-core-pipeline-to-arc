@@ -126,7 +126,7 @@ inputs:
   inputBinding:
     prefix: --singularity_pull_docker_container
 - id: release
-  type: float?
+  type: string?
   default: 1.3
   inputBinding:
     prefix: -r

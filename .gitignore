@@ -7,4 +7,5 @@ node_modules/
 rnaseq_conv.cwl
 load_schema.*
 test_schema.*
-rnaseq.cwl
+*.cwl
+jsonParse.*
