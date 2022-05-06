@@ -47,14 +47,15 @@ type CWLInputType =
   | cwlTsAuto.CommandInputEnumSchema
   | cwlTsAuto.CommandInputArraySchema;
 
-export const formatTypes = [
+/*export const formatTypes = [
   "file-path",
   "directory-path",
   "path",
   "number",
   "string",
   "boolean",
-];
+]; */
+
 /* ************************************* */
 /////////////// FUNCTIONS ////////////////
 /* ************************************* */
@@ -64,12 +65,7 @@ function createBinding(prefix: string): cwlTsAuto.CommandLineBinding {
   });
 }
 
-export function createInput(
-  name: string,
-  type: CWLInputType | CWLInputType[],
-  prefix: string,
-  inputDefault: any
-): cwlTsAuto.CommandInputParameter {
+function createInput(name: string, type: CWLInputType | CWLInputType[], prefix: string, inputDefault: any): cwlTsAuto.CommandInputParameter {
   let binding = createBinding(prefix);
   //return new cwlTsAuto.CommandInputParameter({
   var newInput = new cwlTsAuto.CommandInputParameter({
@@ -113,7 +109,7 @@ function mapNfTypeToType(nfType: string): string {
   }
 }
 
-export function getParams(schema: any, cmdltool: any) {
+function getParams(schema: any, cmdltool: any) {
   //let i = 3;
   for (var item in schema.definitions) {
     var category = schema.definitions[item];
@@ -173,15 +169,10 @@ let nfCommandLineTool = new cwlTsAuto.CommandLineTool({
 nfCommandLineTool.baseCommand = ["nextflow", "run", pipeline];
 // Add optional Inputs
 getParams(schema, nfCommandLineTool);
-// Add mandatory Inputs (all nf-pipelines)
-let nfInput_r = createInput("release", "float?", "-r", Number(version));
+// Add mandatory Inputs (necessary in all nf-pipelines)
+let nfInput_r = createInput("release", "string?", "-r", Number(version));
 nfCommandLineTool.inputs.push(nfInput_r);
-let nfInput_profile = createInput(
-  "profile",
-  "string?",
-  "-profile",
-  "singularity"
-);
+let nfInput_profile = createInput("profile", "string?", "-profile", "singularity");
 nfCommandLineTool.inputs.push(nfInput_profile);
 // Add Output
 let nfOutput_out = new cwlTsAuto.CommandOutputParameter({
