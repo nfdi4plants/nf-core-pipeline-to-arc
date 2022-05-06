@@ -7,5 +7,4 @@ node_modules/
 rnaseq_conv.cwl
 load_schema.*
 test_schema.*
-fetchngs.cwl
-.gitignore
+rnaseq.cwl

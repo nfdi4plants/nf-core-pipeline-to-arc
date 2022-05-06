@@ -7,7 +7,7 @@ import * as http from "https";
 /* ************************************* */
 const prompt = require("prompt-sync")({ sigint: true });
 const pipeline = prompt("Enter the pipelines name (e.g. nf-core/rnaseq): ");
-const tag = prompt("Enter the pipeline branch tag (e.g. master): ");
+//const tag = prompt("Enter the pipeline branch tag (e.g. master): ");
 const version = prompt("Enter the pipeline version used (e.g. 3.5): ");
 const outname = prompt("Enter the name of your output .cwl (e.g. rnaseq): ");
 
@@ -17,7 +17,7 @@ const outname = prompt("Enter the name of your output .cwl (e.g. rnaseq): ");
 // path to github content
 const gitpath = "https://raw.githubusercontent.com/";
 // create path to nextflow_schema.json
-const schemapath = gitpath + pipeline + "/" + tag + "/nextflow_schema.json";
+const schemapath = gitpath + pipeline + "/" + version + "/nextflow_schema.json";
 
 const file = fs.createWriteStream("nextflow_schema.json");
 http.get(schemapath, function (response: any) {
@@ -136,12 +136,12 @@ export function getParams(schema: any, cmdltool: any) {
           let re = /\${projectDir}/gi;
           defaultval = defaultval
             .toString()
-            .replace(re, gitpath + pipeline + "/" + tag);
+            .replace(re, gitpath + pipeline + "/" + version);
         } else if (defaultval.toString().includes("${baseDir}")) {
           let re = /\${baseDir}/gi;
           defaultval = defaultval
             .toString()
-            .replace(re, gitpath + pipeline + "/" + tag);
+            .replace(re, gitpath + pipeline + "/" + version);
         }
       }
       // create Input object
