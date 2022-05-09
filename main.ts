@@ -18,7 +18,7 @@ const outname = prompt("Enter the name of your output .cwl (e.g. rnaseq): ");
 const gitpath = "https://raw.githubusercontent.com/";
 // create path to nextflow_schema.json
 const schemapath = gitpath + pipeline + "/" + version + "/nextflow_schema.json";
-
+// make sure nextflow_schema.json is downloaded/updated before creating .cwl
 var downloadFile = (uri: string, dest: string) =>
   new Promise((resolve, reject) => {
     let file = fs.createWriteStream(dest);
@@ -34,7 +34,7 @@ var downloadFile = (uri: string, dest: string) =>
         });
     });
   });
-
+  //download nextflow_schema.json
 downloadFile(schemapath, "nextflow_schema.json").then((file) => {
   console.log("File downloaded: the nextflow_schema.json has been downloaded/updated");
   var schema = JSON.parse(fs.readFileSync("nextflow_schema.json", "utf8"));
@@ -54,9 +54,15 @@ downloadFile(schemapath, "nextflow_schema.json").then((file) => {
   nfCommandLineTool.baseCommand = ["nextflow", "run", pipeline];
   // Add optional Inputs
   getParams(schema, nfCommandLineTool);
-  // Add mandatory Inputs (necessary in all nf-pipelines)
-  let nfInput_r = createInput("release", "string?", "-r", version.toString());
+  // Add mandatory Inputs (necessary in all nf-pipelines: revision (r) and profile)
+    // for revision: check if version has two or three digits
+  if((version.split(".").length - 1)>1){  
+    var nfInput_r = createInput("release", "string?", "-r", version.toString());
+  } else {
+    var nfInput_r = createInput("release", "float?", "-r", Number(version));
+  }
   nfCommandLineTool.inputs.push(nfInput_r);
+    // for profile: default singularity 
   let nfInput_profile = createInput("profile", "string?", "-profile", "singularity");
   nfCommandLineTool.inputs.push(nfInput_profile);
   // Add Output
@@ -125,8 +131,7 @@ function mapNfTypeToType(nfType: string): string {
       return "File";
     }
     case "number": {
-      //ToDo: Check if it can be int or float?
-      return "int";
+      return "float";
     }
     case "integer": {
       return "int";
