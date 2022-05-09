@@ -23,7 +23,7 @@ var downloadFile = (uri: string, dest: string) =>
   new Promise((resolve, reject) => {
     let file = fs.createWriteStream(dest);
     https.get(uri, (res) => {
-      console.log("\n", "Downloading File");
+      console.log("\n", "Downloading nextflow_schema.json File");
       res
         .on("error", (error) => {
           reject(error);
@@ -36,7 +36,7 @@ var downloadFile = (uri: string, dest: string) =>
   });
 
 downloadFile(schemapath, "nextflow_schema.json").then((file) => {
-  console.log("File downloaded");
+  console.log("File downloaded: the nextflow_schema.json has been downloaded/updated");
   var schema = JSON.parse(fs.readFileSync("nextflow_schema.json", "utf8"));
 
   // CREATE COMMANDLINETOOL //
@@ -55,7 +55,7 @@ downloadFile(schemapath, "nextflow_schema.json").then((file) => {
   // Add optional Inputs
   getParams(schema, nfCommandLineTool);
   // Add mandatory Inputs (necessary in all nf-pipelines)
-  let nfInput_r = createInput("release", "string?", "-r", Number(version));
+  let nfInput_r = createInput("release", "string?", "-r", version.toString());
   nfCommandLineTool.inputs.push(nfInput_r);
   let nfInput_profile = createInput("profile", "string?", "-profile", "singularity");
   nfCommandLineTool.inputs.push(nfInput_profile);
