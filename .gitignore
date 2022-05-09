@@ -4,8 +4,8 @@ node_modules/
 .nextflow.log*
 *.js
 *.config
-rnaseq_conv.cwl
+*.cwl
 load_schema.*
 test_schema.*
-*.cwl
 jsonParse.*
+nextflow_schema.json

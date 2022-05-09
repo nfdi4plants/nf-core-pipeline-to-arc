@@ -55,7 +55,7 @@ downloadFile(schemapath, "nextflow_schema.json").then((file) => {
   // Add optional Inputs
   getParams(schema, nfCommandLineTool);
   // Add mandatory Inputs (necessary in all nf-pipelines)
-  let nfInput_r = createInput("release", "string?", "-r", Number(version));
+  let nfInput_r = createInput("release", "string?", "-r", version.toString());
   nfCommandLineTool.inputs.push(nfInput_r);
   let nfInput_profile = createInput("profile", "string?", "-profile", "singularity");
   nfCommandLineTool.inputs.push(nfInput_profile);

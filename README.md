@@ -7,7 +7,7 @@ Generates an ARC ready CWL workflow and run from a nf-core pipeline's `nextflow_
 Basic commands:
 
 ```
-tsc main.ts --resolveJsonModule
+tsc main.ts
 node main.js
 ```
 
